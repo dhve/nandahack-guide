@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NandaHack · Nanda Town Contribution Guide</title>
+<title>NandaHack · Ship a SkillMD to Nanda Town</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Hind:wght@400;500;600&display=swap');
 
@@ -225,16 +225,33 @@
   .confetti { position: fixed; top: -12px; width: 9px; height: 14px; z-index: 999; pointer-events: none; border-radius: 2px; }
   @keyframes fall { to { transform: translateY(105vh) rotate(640deg); opacity: 1; } }
 </style>
+<style>
+  /* ---- file panel (SkillMD / source files) ---- */
+  .fileblock { background:#1c1813; border-radius:13px; overflow:hidden; margin:13px 0; box-shadow:0 10px 22px -14px rgba(0,0,0,.6); }
+  .file-bar { display:flex; align-items:center; gap:8px; padding:9px 12px; background:#25201a; }
+  .file-bar .fdot { width:10px; height:10px; border-radius:3px; background:var(--saffron); }
+  .file-name { font-family:'JetBrains Mono',monospace; font-size:12px; color:#e0d3bf; letter-spacing:.02em; }
+  .file-bar .copy { margin-left:auto; background:#3a322783; color:#e0d3bf; border:none; border-radius:7px; padding:4px 11px; font-size:11.5px; font-family:'JetBrains Mono',monospace; cursor:pointer; transition:all .15s ease; }
+  .file-bar .copy:hover { background:var(--saffron); color:#fff; }
+  .file-bar .copy.copied { background:var(--green); color:#fff; }
+  .file-body { padding:13px 15px 15px; }
+  .file-line { font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.7; color:#f3ead9; white-space:pre-wrap; word-break:break-word; }
+  .file-line.cmt { color:#8fae9a; }
+  .file-line.hd { color:#ffb703; }
+  /* host tabs reuse .osblock; allow up to 4 tabs to wrap on small screens */
+  .osbar { flex-wrap:wrap; }
+</style>
+
 </head>
 <body>
 <div class="toptrim"></div>
 <div class="wrap">
 
   <header>
-    <span class="kicker">NandaHack · Nanda Town · start from zero</span>
-    <h1>Ship your first <span class="hl">pull request</span> to Nanda Town.</h1>
-    <p class="sub">Nanda Town is an open-source Project NANDA project where AI agents learn to work together. You will fix one small problem and send it in. <b>Never used GitHub? Perfect.</b> Tap through it, one step at a time.</p>
-    <p style="text-align:center;margin-top:16px;font-family:'JetBrains Mono',monospace;font-size:12px"><a href="skillmd/" style="color:var(--indigo);text-decoration:underline;text-underline-offset:3px">Other guide: build a SkillMD for agents &rarr;</a></p>
+    <span class="kicker">NandaHack · Nanda Town · SkillMD</span>
+    <h1>Teach an agent a new trick, then put it <span class="hl">online</span>.</h1>
+    <p class="sub">A SkillMD is a short Markdown file that tells an OpenClaw agent how to call your API. You will <b>build a tiny service, host it, write the file, and submit it</b> to the registry. Never shipped an API before? Tap through it, one step at a time.</p>
+    <p style="text-align:center;margin-top:16px;font-family:'JetBrains Mono',monospace;font-size:12px"><a href="../" style="color:var(--indigo);text-decoration:underline;text-underline-offset:3px">Other guide: ship your first pull request &rarr;</a></p>
   </header>
 
   <div class="picker">
@@ -243,12 +260,12 @@
       <button class="path active" data-path="manual">
         <span class="tagnum">Route 01</span>
         <span class="ptitle">Do it yourself</span>
-        <span class="pdesc">You run the commands. More control, you learn the real workflow.</span>
+        <span class="pdesc">You write the service and host it. More control, you learn the real workflow.</span>
       </button>
       <button class="path" data-path="claude">
         <span class="tagnum">Route 02</span>
         <span class="ptitle">Pair with Claude</span>
-        <span class="pdesc">Claude writes the code with you. Needs a paid Claude plan.</span>
+        <span class="pdesc">Claude writes the service and the SkillMD with you. Needs a paid Claude plan.</span>
       </button>
     </div>
   </div>
@@ -257,7 +274,7 @@
     <div class="hud-inner">
       <div class="hud-top">
         <div class="track"><div class="fill" id="fill"></div></div>
-        <div class="counter">Step <b id="cnum">1</b>/<span id="ctot">10</span></div>
+        <div class="counter">Step <b id="cnum">1</b>/<span id="ctot">8</span></div>
       </div>
       <div class="dots" id="dots"></div>
     </div>
@@ -268,20 +285,20 @@
 
     <button class="glossbtn" id="glossbtn">Confused by a word? Tap here</button>
     <div class="gloss" id="gloss"><div class="gloss-inner">
-      <div class="gterm"><b>terminal</b> the app where you type commands (Terminal on Mac, PowerShell on Windows)</div>
-      <div class="gterm"><b>repo</b> a project folder on GitHub (here, projnanda/nandatown)</div>
-      <div class="gterm"><b>fork</b> your own copy of the project to work on</div>
-      <div class="gterm"><b>clone</b> downloading that copy onto your computer</div>
-      <div class="gterm"><b>branch</b> a safe side version (name yours hackathon/ plus what it does)</div>
-      <div class="gterm"><b>commit</b> a saved checkpoint with a note that says what changed</div>
-      <div class="gterm"><b>plugin</b> your own version of one of the 12 layers</div>
-      <div class="gterm"><b>pull request</b> asking the project to add your changes</div>
-      <div class="gterm" style="color:#3a342e">Nothing joins the real project until a maintainer accepts your PR, so you cannot break anything by trying.</div>
+      <div class="gterm"><b>SkillMD</b> a Markdown file that tells an agent what your tool does and how to call it</div>
+      <div class="gterm"><b>endpoint</b> one live URL on your service the agent can call, like /weather</div>
+      <div class="gterm"><b>base URL</b> the root web address your endpoints hang off, like https://your-app.onrender.com</div>
+      <div class="gterm"><b>host</b> a service that keeps your app online so the URLs stay reachable (Render, Railway, Vercel, Fly)</div>
+      <div class="gterm"><b>/health</b> a tiny endpoint that just says "I am up", used to check your service is alive</div>
+      <div class="gterm"><b>cold start</b> a free host may sleep an idle app; the first call wakes it and is slow, that is normal</div>
+      <div class="gterm"><b>curl</b> a terminal command that calls a URL so you can test it like an agent would</div>
+      <div class="gterm"><b>registry</b> Nanda Town's list of submitted skills, readable by agents over a JSON API</div>
+      <div class="gterm" style="color:#3a342e">A SkillMD with dead links does nothing. The whole job is: real endpoints that stay up, and a file that points at them.</div>
     </div></div>
 
     <div class="finale" id="finale">
-      <div class="big">You contributed to a Project NANDA project.</div>
-      <p>Your PR is live on the Nanda Town scoreboard, scored the same way as everyone else's. You took a real open-source project, fixed a real problem, and shipped it. That is the whole game.</p>
+      <div class="big">Your skill is live in the Nanda Town registry.</div>
+      <p>Any OpenClaw agent can now find your SkillMD, read the steps, and call your API. You shipped a real service, hosted it, and registered it the same way everyone else did. That is the whole game.</p>
       <button class="restart" id="restart">Run it again from the top</button>
     </div>
   </div>
@@ -290,141 +307,165 @@
 
 <script>
 /* ---------------- content ---------------- */
-const CHARTER = 'github.com/projnanda/nandatown';
+const SKILLS = 'nandatown.projectnanda.org/skills';
+
+const APP_PY = `# app.py  -  a minimal SkillMD service
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/health")
+def health():
+    return {"ok": True}
+
+@app.get("/weather")
+def weather(city: str):
+    # demo data - swap in a real source later
+    return {"city": city, "tempF": 64, "sky": "cloudy"}`;
+
+const REQS = `fastapi
+uvicorn[standard]`;
+
+const SKILLMD = `# Weather Lookup
+
+Get the current weather for any city.
+
+## Base URL
+https://YOUR-APP.onrender.com
+
+## Endpoints
+
+GET /weather?city={city}
+  Returns the current weather for one city.
+  Example:
+    curl "https://YOUR-APP.onrender.com/weather?city=Boston"
+  Response:
+    { "city": "Boston", "tempF": 64, "sky": "cloudy" }
+
+## How the agent should use this
+1. Ask the user which city they want.
+2. Call GET /weather with that city.
+3. Read tempF and sky from the answer, then tell the user.`;
+
+const REGISTER = `curl -X POST https://nandatown.projectnanda.org/api/skills \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "Weather Lookup",
+    "source_type": "url",
+    "source_url": "https://YOUR-APP.onrender.com/skill.md",
+    "endpoints": "GET /weather?city={city}"
+  }'`;
+
+const PANE_RENDER = `<b>Render</b><br>1. New &rarr; <b>Web Service</b> &rarr; connect your repo.<br>2. Build command: <code>pip install -r requirements.txt</code><br>3. Start command: <code>uvicorn app:app --host 0.0.0.0 --port $PORT</code><br>4. Pick the free instance, create, and wait for the green <b>Live</b>.`;
+const PANE_RAILWAY = `<b>Railway</b><br>1. New Project &rarr; <b>Deploy from GitHub repo</b>.<br>2. It auto-detects Python. Set the start command:<br><code>uvicorn app:app --host 0.0.0.0 --port $PORT</code><br>3. Open <b>Settings &rarr; Networking &rarr; Generate Domain</b> for a public URL.`;
+const PANE_FLY = `<b>Fly.io</b><br>1. Install the CLI, then in your folder run <code>fly launch</code> (it writes a config and detects the app).<br>2. Set the internal port to <b>8080</b> and start command <code>uvicorn app:app --host 0.0.0.0 --port 8080</code>.<br>3. Run <code>fly deploy</code>. Your URL ends in <b>.fly.dev</b>.`;
+const PANE_VERCEL = `<b>Vercel</b><br>Best when you already have a Next.js or Python serverless project. For a plain FastAPI app, add an <code>api/</code> function or a small <code>vercel.json</code>, then <b>Import Project</b> from your repo. If that is more setup than you want, use Render or Railway.`;
+
 const ROUTES = {
   manual: { name:'Do it yourself', steps: [
-    { title:'Set up your tools',
-      lead:'You need three free things: a GitHub account, Git, and Python 3.12 or newer. Let us open the terminal and check Python.',
+    { title:'What you are shipping',
+      lead:'A SkillMD has two parts and you need both: the instructions, and the live endpoints they point at. This route builds a tiny service, puts it online, then writes the file.',
       blocks:[
-        ['do','Make a free <b>GitHub account</b> at github.com if you do not have one.'],
-        ['do','Open your <b>terminal</b>, the app where you type commands.'],
-        ['os','Press <b>Cmd + Space</b>, type <b>Terminal</b>, press Enter.','Open <b>Start</b>, type <b>PowerShell</b>, press Enter.'],
-        ['cmd','python3 --version','Python 3.12.4','Shows <b>3.12 or higher</b>? You are ready, go next.'],
-        ['oops','It showed a lower number, or "command not found"','You need to install Python.<br><b>Mac:</b> run the Homebrew installer below (it may ask your Mac password, the screen stays blank while you type, that is normal), then <code>brew install python</code>.<br><b>Windows:</b> install from python.org and tick <b>"Add Python to PATH"</b> on the first screen.','/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'],
-        ['oops','Later it says "command not found: pip"','Normal on Mac. Use <code>python3 -m pip</code> instead of bare <code>pip</code> everywhere in this guide.'],
-        ['why','How do I paste a command?','Click the <b>Copy</b> button, click into the terminal, then <b>Cmd + V</b> (Mac) or <b>Ctrl + V</b> / right-click (Windows). Press Enter to run.'],
-        ['tip','Installs can print a wall of text or pause for a minute. That is fine. A command is done when a fresh prompt (ending in <b>%</b> or <b>$</b>) comes back.']
+        ['do','<b>Part 1, the instructions.</b> A Markdown file: what your tool does, the base URL, each endpoint, and the steps an agent should follow.'],
+        ['do','<b>Part 2, the endpoints.</b> Your real API at live URLs the agent can actually call. The file just points at them; the service does the work.'],
+        ['why','Do I have to write code?','You need <b>something</b> live at a URL that returns an answer. The smallest version is a dozen lines, shown next. Already have an API? Skip straight to writing the SkillMD.'],
+        ['why','What are the judges looking for?','Four things: it is <b>useful</b> (agents really need it), <b>creative</b> (a fresh idea), <b>easy to set up</b> (little effort to a working call), and an agent can <b>succeed using only your SkillMD</b>. Build for that last one and the rest follow.'],
+        ['tip','Keep your first skill tiny. One endpoint that clearly works beats five that half-work. You can always add more later.']
       ]},
-    { title:'Try Nanda Town once',
-      lead:'Before touching any code, run the demo so you can see what this project actually is. Run these one line at a time.',
+    { title:'Build a tiny service',
+      lead:'Here is a complete service in a dozen lines using FastAPI. It has a /health check and one real endpoint. Make a folder and add these two files.',
       blocks:[
-        ['cmd','python3 -m pip install "nest-core[plugins]"','Successfully installed nest-core','Press Enter and let it finish before the next line.'],
-        ['cmd','nest run marketplace','Spinning up 50 buyers x 50 sellers...\nTrades complete. Log saved to traces/marketplace.jsonl'],
-        ['cmd','nest doctor','7/7 checks passed','"7/7 checks passed" means you are good to go.'],
-        ['oops','Stuck at a quote> or dquote> prompt','A stray quote got left open, usually from pasting two lines at once. Press <b>Ctrl + C</b> to get your normal prompt back, then paste one line at a time.'],
-        ['why','What just happened?','You ran a tiny simulation of AI agents negotiating prices. The hackathon is about improving pieces of how they do that.']
+        ['file','app.py', APP_PY, 'py'],
+        ['file','requirements.txt', REQS, 'txt'],
+        ['why','Why FastAPI?','It is tiny to write, returns JSON by default, and gives you a free interactive test page at <code>/docs</code>. Flask or Express work too; the registry does not care what is behind the URL.'],
+        ['tip','Swap the demo numbers in <code>/weather</code> for a real data source whenever you are ready. The shape stays the same.']
       ]},
-    { title:'Fork and clone',
-      lead:'Make your own copy on GitHub (fork), then download it to your computer (clone).',
+    { title:'Run it on your machine',
+      lead:'Install the two packages and start the server, then open it in a browser to watch it answer.',
       blocks:[
-        ['do','Go to <b>'+CHARTER+'</b> and click <b>Fork</b> (top right).'],
-        ['cmd','git clone https://github.com/YOUR-USERNAME/nandatown.git\ncd nandatown','Cloning into \'nandatown\'... done.','Swap <b>YOUR-USERNAME</b> for your GitHub name.'],
-        ['why','Why do I need BOTH fork and clone?','A <b>fork</b> is your copy living on GitHub. A <b>clone</b> is that copy on your own computer, where you can actually build and run it. Forking alone is not enough. Picture it: forking copies a class project into your folder, cloning prints it out so you can write on it.'],
-        ['oops','"git: command not found" on a Mac','A popup offers to install Apple\'s developer tools. Click <b>Install</b>, wait, then run the line again. On Windows, install Git from git-scm.com first.']
+        ['os','Press <b>Cmd + Space</b>, type <b>Terminal</b>, press Enter. Then <code>cd</code> into your project folder.','Open <b>Start</b>, type <b>PowerShell</b>, press Enter. Then <code>cd</code> into your project folder.'],
+        ['cmd','python3 -m pip install -r requirements.txt','Successfully installed fastapi uvicorn','Let it finish before the next line.'],
+        ['cmd','uvicorn app:app --reload','Uvicorn running on http://127.0.0.1:8000','Leave this running. Open a second terminal tab for the test.'],
+        ['do','In your browser open <b>http://127.0.0.1:8000/health</b>. You should see <code>{"ok":true}</code>. Then open <b>/docs</b> for a clickable test page.'],
+        ['oops','"command not found: pip" on a Mac','Normal. Use <code>python3 -m pip</code> instead of bare <code>pip</code> everywhere. If <code>uvicorn</code> is not found, run <code>python3 -m uvicorn app:app --reload</code>.']
       ]},
-    { title:'Make a branch',
-      lead:'Work on a safe side version named for the hackathon. The main project stays untouched.',
+    { title:'Test it like an agent will',
+      lead:'An agent reaches your service over plain HTTP. curl does the same from your terminal. If it does not answer for you, it will not answer for the agent.',
       blocks:[
-        ['cmd','git checkout -b hackathon/trust-sybil-resistance','Switched to a new branch \'hackathon/trust-sybil-resistance\''],
-        ['why','How should I name it?','It <b>must</b> start with <code>hackathon/</code>, then describe the actual work. Good: <b>hackathon/faster-auction-validator</b>. Weak: <b>hackathon/test1</b>, <b>hackathon/vedh</b>, these make a reviewer guess.'],
-        ['tip','Branch naming is one of the scored rules. The exact format is in <b>docs/hackathon/charter.md</b>, so read it first.']
+        ['cmd','curl "http://127.0.0.1:8000/weather?city=Boston"','{"city":"Boston","tempF":64,"sky":"cloudy"}','A clean JSON line back means the endpoint works.'],
+        ['why','What am I checking for?','Three things: it <b>responds</b>, it returns <b>JSON</b>, and the shape matches what your SkillMD will promise. Lock the shape now so the file stays honest.'],
+        ['oops','curl hangs or says "connection refused"','The server is not running, or you are on the wrong port. Check the <code>uvicorn</code> tab is still up and the URL says <b>8000</b>.']
       ]},
-    { title:'Build your fix',
-      lead:'The real work. Nanda Town has 12 layers (transport, identity, trust, payments...). Pick one problem and write a small fix.',
+    { title:'Put it online so it stays up',
+      lead:'Localhost only exists on your laptop. Pick a host that keeps the service reachable. Push your folder to a GitHub repo first, then deploy from it.',
       blocks:[
-        ['do','Open <b>docs/hackathon/problems</b> and pick <b>ONE</b> problem. Start small, a solid small fix beats a big broken one.'],
-        ['do','To edit files you need a <b>code editor</b>. Free pick: <b>VS Code</b> (code.visualstudio.com) &rarr; File &rarr; Open Folder &rarr; choose <b>nandatown</b>.'],
-        ['why','Where do I even start?','The README section <b>"Test your own protocol"</b> walks through a full example of swapping in your own payments scheme. Copy that pattern.'],
-        ['why','What is a "plugin"?','Your own better version of one of the 12 layers. You can also add a new test scenario or a validator instead.']
+        ['do','Create a <b>GitHub repo</b> and push <code>app.py</code> and <code>requirements.txt</code> to it. Most hosts deploy straight from the repo.'],
+        ['tabs', ['Render','Railway','Fly','Vercel'], [PANE_RENDER, PANE_RAILWAY, PANE_FLY, PANE_VERCEL]],
+        ['why','Which one should I pick?','Any of them. <b>Render</b> and <b>Railway</b> are the least fuss for a plain API. <b>Fly</b> is great if you like the CLI. <b>Vercel</b> is best if you already have a Next.js or serverless setup.'],
+        ['oops','The first call after a quiet spell is slow or fails once','Free tiers <b>sleep</b> idle apps. The first request wakes it and can take 30 to 60 seconds, then it is fast. Hit <code>/health</code> once to warm it before you test.']
       ]},
-    { title:'Write tests',
-      lead:'Code without tests is just a claim. Tests are scored on their own, and they prove your fix works.',
+    { title:'Test the live URL',
+      lead:'Same curl, now against your public address. This is the exact check the registry runs, so make it pass here first.',
       blocks:[
-        ['do','Write a test that <b>fails without your fix and passes with it</b>. That single test is your strongest proof.'],
-        ['do','Run the whole suite so you know you did not break anything else:'],
-        ['cmd','pytest -v','collected 42 items\n......................................... 42 passed'],
-        ['oops','"command not found: pytest"','Same fix as pip: run <code>python3 -m pytest -v</code>. If it is not installed at all, run <code>python3 -m pip install pytest</code> first.'],
-        ['why','What is regression testing?','Running the old tests to make sure your change did not quietly break code that already worked. Your new test proves your thing works; the old tests prove you broke nothing.']
+        ['cmd','curl "https://YOUR-APP.onrender.com/health"','{"ok":true}','Swap in your real domain. A clean response means you are reachable from the outside world.'],
+        ['cmd','curl "https://YOUR-APP.onrender.com/weather?city=Boston"','{"city":"Boston","tempF":64,"sky":"cloudy"}'],
+        ['do','Open the same URL in a normal browser tab too. If <b>you</b> can reach it fresh, an agent can.'],
+        ['tip','Write your live base URL down now. You will paste it into the SkillMD and the submit form next.']
       ]},
-    { title:'Save your work',
-      lead:'Save snapshots as you go. Each is a commit with a short note. Reviewers read these, so say what changed and why.',
+    { title:'Write the SkillMD',
+      lead:'Now the file that ties it together. Copy this, change the name and every URL to your own, and keep it short and concrete.',
       blocks:[
-        ['cmd','git add .\ngit commit -m "Add Sybil-resistant scoring to trust plugin"','1 file changed, 28 insertions(+)'],
-        ['oops','It stops and asks who I am','First commit ever? Git needs your name and email once. Set them with the lines below (your real name, and the email on your GitHub account), then run the commit again.','git config --global user.name "Your Name"\ngit config --global user.email "you@example.com"'],
-        ['why','Good vs weak messages','Good: <b>"Add test for double-vote rejection."</b> Weak: <b>"update", "fix", "asdf", "final v2".</b> Write each like an instruction: Add..., Fix..., Remove...']
+        ['file','skill.md', SKILLMD, 'md'],
+        ['why','What makes a good SkillMD','<b>1.</b> A clear name and one-line purpose.<br><b>2.</b> The exact <b>base URL</b>.<br><b>3.</b> Every endpoint, with one example call and one example response.<br><b>4.</b> Plain-language steps the agent follows.<br>Show, do not describe. One real <code>curl</code> and its answer beats a paragraph.'],
+        ['do','Give the file its own link. Easiest: commit <code>skill.md</code> to your repo and use its <b>raw</b> GitHub URL, or serve it from your app at <code>/skill.md</code>.']
       ]},
-    { title:'Write a README',
-      lead:'A reviewer should never have to guess what you built. Docs are one of the six scored things. Add a short README.md next to your code.',
+    { title:'Submit it, then check the registry',
+      lead:'Send it to Nanda Town. Use the form on the Skills page, or post it from the terminal. Then read it back to confirm it landed.',
       blocks:[
-        ['why','What to put in it (tap)','<b>1.</b> Which problem you picked + a link.<br><b>2.</b> What you built and which of the 12 layers it touches.<br><b>3.</b> The exact commands to run it.<br><b>4.</b> What changed and why it is better, with before/after numbers.<br><b>5.</b> Any limits, honesty scores better than overclaiming.'],
-        ['cmd','# My Trust Scoring Plugin\n\n## Problem\nSolves problem #4 (trust layer): the default\nscorer has no defence against fake good behaviour.\n\n## How to run it\npython3 -m pip install -e .\nnest run reputation.yaml -o ./traces/mine.jsonl\n\n## Result\nCheating agents flagged 30% faster than default.\n\n## Limits\nDoes not yet handle agents that collude in pairs.'],
-        ['tip','Those numbers are a sample. Swap in <b>your real results</b> before you submit.']
-      ]},
-    { title:'Run the full check',
-      lead:'One command runs everything the project will run on your PR: the tests again, plus formatting and type checks.',
-      blocks:[
-        ['cmd','make ci-local','Running tests, format, type checks...\nAll checks passed.'],
-        ['oops','"make: command not found" on a Mac','You need Apple\'s free command line tools once. Run <code>xcode-select --install</code>, click through the popup, let it finish, then try <code>make ci-local</code> again.'],
-        ['tip','If it passes here, it passes when you submit. The project calls this the <b>"Definition of Done."</b> Do not skip it.']
-      ]},
-    { title:'Push and open your PR',
-      lead:'Send your branch up, then ask the project to add it. The first push needs a one-time sign-in.',
-      blocks:[
-        ['do','Your <b>website password will not work</b> in the terminal. Sign in once with GitHub\'s official helper:'],
-        ['cmd','brew install gh\ngh auth login','Logged in as YOUR-USERNAME','Choose <b>GitHub.com</b> &rarr; <b>HTTPS</b> &rarr; <b>Login with a web browser</b>. On Windows, get <b>gh</b> from cli.github.com.'],
-        ['cmd','git push origin hackathon/trust-sybil-resistance','Branch pushed to your fork.'],
-        ['oops','It asked for a username and password','Sign-in did not finish. Run <code>gh auth login</code> again, complete every step in the browser, then push once more. Never type your GitHub password here, it is always rejected.'],
-        ['do','Open <b>'+CHARTER+'</b> &rarr; click <b>"Compare & pull request"</b> &rarr; write what you built, the problem, how to run it, and your result &rarr; <b>Create pull request</b>.'],
-        ['tip','Reread your own PR like a stranger. Anything that makes you ask "wait, what is this?" &rarr; fix it now. A self-explanatory PR is the whole goal.']
+        ['do','Open <b>'+SKILLS+'</b> and scroll to <b>Add your SkillMD</b>. Three ways to send it: a <b>hosted link</b> to the .md, a <b>GitHub repo</b>, or <b>paste</b> the text. Add your real endpoint URLs and submit.'],
+        ['cmd', REGISTER, 'Saved to the Nanda Town registry.','Or skip the form and register from code. Swap in your name, your .md link, and your endpoints.'],
+        ['cmd','curl https://nandatown.projectnanda.org/api/skills','{ "count": 17, "skills": [ ... your skill ... ] }','The list is public JSON. Find your entry in the skills array and copy its id.'],
+        ['cmd','curl https://nandatown.projectnanda.org/api/skills/<id>','{ "skill": { "name": "Weather Lookup", ... } }','Replace <id> with yours. Seeing your file come back means agents can read it too.'],
+        ['tip','Watch your listing for <b>"link responded"</b> versus <b>"couldn\'t reach link"</b>. If it cannot reach you, your host is asleep or down. Warm it with a <code>/health</code> call and resubmit.']
       ]}
   ]},
   claude: { name:'Pair with Claude', steps: [
-    { title:'Set up your tools',
-      lead:'You need a GitHub account, Git, Python 3.12+, and a paid Claude plan (Claude Code is not on the free tier).',
+    { title:'What you are shipping',
+      lead:'Same goal: a live API plus a Markdown file that points at it. On this route Claude writes the service and the SkillMD, and you handle the one thing it cannot click for you, hosting.',
       blocks:[
-        ['cmd','python3 --version','Python 3.12.4','Shows 3.12 or higher? You are ready.'],
-        ['oops','Lower number or "command not found"','Install Python the same way as the Do it yourself route, or simpler: paste the error to Claude and ask it to walk you through installing Python on your system.'],
-        ['tip','Claude does the typing, but <b>you</b> decide what to build and review everything. Think fast teammate, not autopilot.']
+        ['do','You still decide <b>what</b> the skill does, and you review everything. Think fast teammate, not autopilot.'],
+        ['why','What is a SkillMD again?','A short Markdown file telling an OpenClaw agent what your tool does, its base URL, each endpoint, and the steps to use it. It is useless without <b>live</b> endpoints behind it, which is why hosting matters.'],
+        ['why','What are the judges looking for?','Four things: it is <b>useful</b>, <b>creative</b>, <b>easy to set up</b>, and an agent can <b>succeed using only your SkillMD</b>. Aim for that last one.'],
+        ['tip','Claude does the typing. You confirm the service is real and the URLs resolve. Only you can do that last part.']
       ]},
-    { title:'Install Claude Code',
-      lead:'One official command. Open your terminal first (Mac: Cmd+Space, type Terminal. Windows: Start, type PowerShell).',
+    { title:'Ask Claude to build the service',
+      lead:'Open Claude (Claude Code in your terminal, or the app) inside an empty project folder and paste this.',
       blocks:[
-        ['oscmd','curl -fsSL https://claude.ai/install.sh | bash','irm https://claude.ai/install.ps1 | iex'],
-        ['cmd','claude --version','Claude Code 2.0','Then type <b>claude</b> once to log in through your browser.'],
-        ['oops','Safety first','Only use these official commands. Fake "Claude Code" pages have been spread through ads to push malware. When unsure, check <b>code.claude.com</b>.']
+        ['ask','Build me the smallest possible web service for a Nanda Town SkillMD. One /health endpoint and one real endpoint of my choosing. Use FastAPI, give me app.py and requirements.txt, and show me the exact commands to run it locally and test it with curl.'],
+        ['do','Read the files it writes. Run it locally and curl the endpoint so you see the JSON come back before going further.'],
+        ['oops','Claude wrote it but I do not understand a line','Ask it: <b>"explain app.py to me line by line like I am new to web servers."</b> You will want that understanding when someone asks how your skill works.']
       ]},
-    { title:'Fork, clone, open in Claude',
-      lead:'Make your copy, download it, and start Claude inside the folder.',
+    { title:'You host it, Claude cannot click deploy',
+      lead:'This is the one part Claude cannot do for you. It can write every file and command, but signing into a host and pressing deploy is yours.',
       blocks:[
-        ['do','Fork <b>'+CHARTER+'</b> on GitHub.'],
-        ['cmd','git clone https://github.com/YOUR-USERNAME/nandatown.git\ncd nandatown\nclaude','Claude is ready in nandatown/','Swap in your GitHub username.']
+        ['ask','Walk me through putting this on a GitHub repo, then deploying it to Render on the free tier. Give me the exact build command, start command, and what to click.'],
+        ['do','Follow its steps to push the repo and create the web service. When it shows <b>Live</b>, copy your public URL.'],
+        ['oops','The one thing to get right','Free hosts <b>sleep</b> idle apps. The first request after a quiet spell is slow or fails once, then recovers. Hit your <code>/health</code> URL once to warm it before you test or submit.'],
+        ['tip','Render and Railway are the least fuss for a plain API. Tell Claude which one you picked and it will tailor the steps.']
       ]},
-    { title:'Ask Claude to explain a problem',
-      lead:'Learn first. Do not just say "win the hackathon." Paste this to Claude:',
+    { title:'Have Claude write the SkillMD',
+      lead:'With a live URL in hand, get the Markdown file, then check every URL in it yourself.',
       blocks:[
-        ['ask','Read docs/hackathon/problems and explain three of them to me like I am new to this. Which one is the most beginner-friendly?'],
-        ['do','Pick one problem with Claude\'s help, then have it walk you through the files you would change.']
+        ['ask','Write a SkillMD for my service using my live base URL [paste it]. Include the base URL, each endpoint with one example curl and one example response, and plain steps for how an agent should use it. Keep it short and concrete.'],
+        ['do','Read it line by line and <b>click every URL</b> in it. A SkillMD with one dead link does nothing. Fix anything that does not resolve.'],
+        ['why','Why check the URLs myself?','Only you can confirm the live service matches what the file promises. The registry tests the link, and so does every agent that tries to use it.']
       ]},
-    { title:'Build it together',
-      lead:'Ask Claude to set up the branch and build the fix, with tests, alongside you:',
+    { title:'Submit and verify',
+      lead:'Last step. Submit through the form or have Claude post it, then read it back to confirm.',
       blocks:[
-        ['ask','Make a branch named hackathon/ plus a short description, like hackathon/trust-sybil-resistance. Help me write a plugin that solves the problem we picked. Add a test that fails without the fix and passes with it, then run the full test suite. Use clear commit messages.'],
-        ['do','Read what it writes and ask about anything you do not understand.'],
-        ['why','Why care if Claude does it?','Tests are scored, and the old suite passing proves your change did not break working code (regression testing). That understanding is what you will be glad to have when someone asks you about your work later.']
-      ]},
-    { title:'Write the README with Claude',
-      lead:'Docs are one of the six scored things, so do not skip this. Ask Claude to draft it, then check every claim yourself.',
-      blocks:[
-        ['ask','Write a short README.md for my fix. Cover the problem I picked, what I built, the exact commands to run it, the before and after result, and any limits. Keep it honest, do not overclaim.'],
-        ['do','Read it line by line, then <b>run it once more</b> and check the numbers match. Only you can confirm the results are real.']
-      ]},
-    { title:'Run the checks, open the PR',
-      lead:'Ask Claude to run the project\'s own check command, then finish up.',
-      blocks:[
-        ['ask','Run make ci-local and fix anything that comes back red.'],
-        ['ask','Commit this, push the branch, and open a pull request to projnanda/nandatown. In the PR description include the problem, what I built, how to run it, and the result.'],
-        ['oops','The one thing Claude cannot do for you','The first push needs <b>you</b> to sign in to GitHub through your browser, Claude cannot click that. If the push stops and asks you to log in, tell Claude <b>"walk me through gh auth login"</b> and it will guide you. You sign in once, then Claude finishes the push.'],
-        ['do','Before you call it done, read the finished PR yourself like a stranger. Anything confusing? Tell Claude to clarify it.']
+        ['do','Open <b>'+SKILLS+'</b>, scroll to <b>Add your SkillMD</b>, and submit by hosted link, GitHub repo, or paste. Add your real endpoint URLs.'],
+        ['ask','Register my skill on Nanda Town by POSTing to https://nandatown.projectnanda.org/api/skills with my name, the source_url for my .md, and my endpoints. Then read it back from /api/skills and show me my entry.'],
+        ['do','Check your listing shows <b>"link responded"</b>. If it shows <b>"couldn\'t reach link"</b>, warm the host with a /health call and resubmit.']
       ]}
   ]}
 };
@@ -448,7 +489,7 @@ function term(code, out, say, runnable){
   let h = '<div class="term"><div class="term-bar"><span class="tdot r"></span><span class="tdot y"></span><span class="tdot g"></span><button class="copy" data-code="'+encodeURIComponent(code)+'">Copy</button></div><div class="term-body">'+codeHtml;
   if(runnable && out){
     const lines = out.split('\n');
-    const outHtml = lines.map((l,i)=>'<div class="oline'+(/passed|done|Logged|complete|ready|Successfully/i.test(l)?'':' dim')+'" style="animation-delay:'+(i*0.18)+'s">'+esc(l)+'</div>').join('');
+    const outHtml = lines.map((l,i)=>'<div class="oline'+(/passed|done|Logged|complete|ready|Successfully|ok|registry|running/i.test(l)?'':' dim')+'" style="animation-delay:'+(i*0.18)+'s">'+esc(l)+'</div>').join('');
     h += '<button class="run"><span class="tri"></span>Run</button><div class="out">'+outHtml+'<div class="ranbadge" style="animation-delay:'+(lines.length*0.18+0.1)+'s"><span class="tick">'+tickSVG+'</span>done</div></div>';
   }
   h += '</div></div>';
@@ -456,17 +497,32 @@ function term(code, out, say, runnable){
   return h;
 }
 
+function fileblock(name, code, lang){
+  const lines = code.split('\n').map(l=>{
+    let cls = 'file-line';
+    const tr = l.trim();
+    if(lang==='md' && tr.indexOf('#')===0) cls += ' hd';
+    else if(lang!=='md' && tr.indexOf('#')===0) cls += ' cmt';
+    const safe = l==='' ? '\u00a0' : esc(l);
+    return '<div class="'+cls+'">'+safe+'</div>';
+  }).join('');
+  return '<div class="fileblock"><div class="file-bar"><span class="fdot"></span><span class="file-name">'+esc(name)+'</span><button class="copy" data-code="'+encodeURIComponent(code)+'">Copy</button></div><div class="file-body">'+lines+'</div></div>';
+}
+
 function renderBlock(b){
   const t = b[0];
   if(t==='do') return '<div class="do"><span class="dot-i"></span><div>'+b[1]+'</div></div>';
   if(t==='cmd') return term(b[1], b[2], b[3], true);
+  if(t==='file') return fileblock(b[1], b[2], b[3]||'txt');
   if(t==='os'){
     return '<div class="osblock"><div class="osbar"><button class="osbtn active" data-os="m">Mac / Linux</button><button class="osbtn" data-os="w">Windows</button></div>'+
       '<div class="ospane show" data-os="m">'+b[1]+'</div><div class="ospane" data-os="w">'+b[2]+'</div></div>';
   }
-  if(t==='oscmd'){
-    return '<div class="osblock"><div class="osbar"><button class="osbtn active" data-os="m">Mac / Linux</button><button class="osbtn" data-os="w">Windows</button></div>'+
-      '<div class="ospane show" data-os="m">'+term(b[1],'',null,false)+'</div><div class="ospane" data-os="w">'+term(b[2],'',null,false)+'</div></div>';
+  if(t==='tabs'){
+    const labels=b[1], panes=b[2];
+    const bar = labels.map((l,i)=>'<button class="osbtn'+(i===0?' active':'')+'" data-os="t'+i+'">'+l+'</button>').join('');
+    const body = panes.map((p,i)=>'<div class="ospane'+(i===0?' show':'')+'" data-os="t'+i+'">'+p+'</div>').join('');
+    return '<div class="osblock"><div class="osbar">'+bar+'</div>'+body+'</div>';
   }
   if(t==='ask') return '<div class="ask"><span class="lbl">Say this to Claude</span><button class="copy2" data-code="'+encodeURIComponent(b[1])+'">Copy</button><div class="txt">"'+b[1]+'"</div></div>';
   if(t==='why') return '<button class="reveal why"><span class="ic">?</span>'+b[1]+'<span class="chev">v</span></button><div class="reveal-body"><div class="reveal-inner">'+b[2]+'</div></div>';
