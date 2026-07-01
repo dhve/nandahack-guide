@@ -97,7 +97,7 @@
   <header>
     <span class="kicker">NANDA Town · Submit</span>
     <h1>Submit your <span class="hl">contribution</span>.</h1>
-    <p class="sub">This form registers your contribution directly in the NANDA Town registry, the same registry agents read. Pick what you are submitting, fill in the fields, done. <b>No account needed.</b></p>
+    <p class="sub">Pick what you are submitting and fill in the fields. Your entry is stored publicly and reviewed by the NANDA Town team; once approved it appears on the <a href="../../showcase/" style="color:var(--indigo);font-weight:600">live showcase</a> automatically. <b>No account needed.</b></p>
   </header>
 
   <div class="card">
@@ -175,17 +175,18 @@
     </div>
 
     <div class="result" id="result">
-      <h3>Submitted.</h3>
-      <p>Your contribution is now in the NANDA Town registry.</p>
+      <h3>Submitted for review.</h3>
+      <p>Your contribution is safely stored and now waits for a quick review by the NANDA Town team.</p>
       <p id="result-id"></p>
-      <p>See it live on the <a href="https://nandatown.projectnanda.org/skills" target="_blank" rel="noopener">NANDA Town skills page</a>, or fetch it from code: <code>curl https://nandatown.projectnanda.org/api/skills</code></p>
+      <p>Once approved it appears automatically on the public <a href="../../showcase/" >live showcase</a>, and, for code and live demos, in the <a href="https://nandatown.projectnanda.org/skills" target="_blank" rel="noopener">NANDA Town skills registry</a> that agents read.</p>
     </div>
 
-    <div class="note"><span class="star">&#9733;</span><span>Submissions go straight into the public registry that agents read. <b>Double-check your links answer</b> before you submit.</span></div>
+    <div class="note"><span class="star">&#9733;</span><span>Submissions are reviewed before they go public. <b>Make sure your links open for anyone</b> (public video, reachable demo URL) so review is quick.</span></div>
   </div>
 
   <div class="footer">
     <a href="../">All paths</a> &nbsp;·&nbsp;
+    <a href="../../showcase/">Live showcase</a> &nbsp;·&nbsp;
     <a href="../../skillmd/">SkillMD guide</a> &nbsp;·&nbsp;
     <a href="../../demo/">Live demo</a> &nbsp;·&nbsp;
     <a href="https://nandatown.projectnanda.org/skills" target="_blank" rel="noopener">Registry</a> &nbsp;·&nbsp;
@@ -194,9 +195,10 @@
 </div>
 
 <script>
-// Submissions are proxied through the deployed router service because the
-// NANDA Town API does not send CORS headers for cross-origin browser calls.
-const PROXY = 'https://cheapest-llm-router.onrender.com/town/submit';
+// Submissions are stored (pending review) in the public showcase repo via
+// the deployed backend. On approval they appear on the live showcase page
+// and, for code and live demos, in the NANDA Town skills registry.
+const PROXY = 'https://cheapest-llm-router.onrender.com/showcase/submit';
 
 let PATH = 'individual';
 let TYPE = 'code';
@@ -243,26 +245,22 @@ function buildPayload() {
   const tags = [userTags, ...autoTags].filter(Boolean).join(', ');
   const endpoints = $('f-endpoints').value.trim() || null;
 
-  let source_type, source_url = null, content = null;
+  let url = null, content = null;
   if (TYPE === 'code') {
-    source_type = 'github';
-    source_url = $('f-code-url').value.trim();
-    if (!source_url.startsWith('http')) throw 'Paste a full GitHub URL.';
+    url = $('f-code-url').value.trim();
+    if (!url.startsWith('http')) throw 'Paste a full GitHub URL.';
   } else if (TYPE === 'live') {
-    source_type = 'url';
-    source_url = $('f-live-url').value.trim();
-    if (!source_url.startsWith('http')) throw 'Paste a full demo URL.';
+    url = $('f-live-url').value.trim();
+    if (!url.startsWith('http')) throw 'Paste a full demo URL.';
     if (!endpoints) throw 'List at least one live endpoint agents can call.';
   } else if (TYPE === 'video') {
-    source_type = 'url';
-    source_url = $('f-video-url').value.trim();
-    if (!source_url.startsWith('http')) throw 'Paste a full video URL.';
+    url = $('f-video-url').value.trim();
+    if (!url.startsWith('http')) throw 'Paste a full video URL (YouTube, Loom, or a public Drive link).';
   } else {
-    source_type = 'content';
     content = $('f-writeup').value.trim();
     if (content.length < 50) throw 'The written case needs some substance, aim for a few paragraphs.';
   }
-  return { name, author, description: desc, source_type, source_url, content, endpoints, tags };
+  return { name, author, description: desc, submission_type: TYPE, contributor_path: PATH, url, content, endpoints, tags };
 }
 
 async function submit() {
@@ -291,8 +289,7 @@ async function submit() {
     const data = await r.json();
     if (!r.ok) throw new Error(data.detail || ('HTTP ' + r.status));
     st.className = 'status ok'; st.textContent = 'Done.';
-    const id = data.town_response && (data.town_response.id || (data.town_response.skill && data.town_response.skill.id));
-    $('result-id').innerHTML = id ? ('Registry id: <code>' + id + '</code>') : '';
+    $('result-id').innerHTML = data.id ? ('Submission id: <code>' + data.id + '</code> (keep this to ask about your review)') : '';
     $('result').classList.add('show');
   } catch (e) {
     clearTimeout(slow);
