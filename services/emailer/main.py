@@ -6,6 +6,7 @@ end to end: a caller service reaches an underlying model via the router.
 
 import os
 import pathlib
+import time
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -56,15 +57,25 @@ def rewrite(req: RewriteRequest):
         raise HTTPException(400, f"Unknown tone '{req.tone}'. Use professional | warm | apologetic.")
     quality = PRIORITY_TO_QUALITY.get(req.priority, "basic")
     prompt = f"{hint}\n\nDraft:\n{req.draft}\n\nReturn only the rewritten email."
-    try:
-        r = httpx.post(
-            f"{ROUTER_URL}/complete",
-            json={"prompt": prompt, "min_quality": quality, "max_output_tokens": 400},
-            timeout=15,
-        )
-        r.raise_for_status()
-    except httpx.HTTPError as e:
-        raise HTTPException(502, f"Router unavailable at {ROUTER_URL}: {e}")
+    # Retry against Render's free-tier edge, which occasionally 404s a request
+    # while the router container is still spinning up.
+    last_err = None
+    r = None
+    for attempt in range(4):
+        try:
+            r = httpx.post(
+                f"{ROUTER_URL}/complete",
+                json={"prompt": prompt, "min_quality": quality, "max_output_tokens": 400},
+                timeout=65,
+            )
+            if r.status_code < 400:
+                break
+            last_err = f"HTTP {r.status_code}"
+        except httpx.HTTPError as e:
+            last_err = str(e)
+        time.sleep(1.5 * (attempt + 1))
+    if r is None or r.status_code >= 400:
+        raise HTTPException(502, f"Router unavailable at {ROUTER_URL} after retries: {last_err}")
     data = r.json()
     return {
         "rewritten": data["response"],

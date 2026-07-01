@@ -110,5 +110,4 @@ def complete(req: RouteRequest):
 
 @app.get("/skill.md", response_class=PlainTextResponse)
 def skill_md():
-    p = ROOT.parent / "skill.md"
-    return p.read_text()
+    return (ROOT / "skill.md").read_text()
