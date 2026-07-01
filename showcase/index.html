@@ -113,8 +113,9 @@
 </div>
 
 <script>
-const BACKEND = 'https://cheapest-llm-router.onrender.com/showcase/approved';
-const STATIC_DATA = 'data/approved.json';
+// Approved entries live in a Google Sheet in the NANDA Town team's Drive,
+// served by an Apps Script web app. Approvals appear here immediately.
+const BACKEND = 'https://script.google.com/macros/s/AKfycbxwVoXAPyggpYR1AJ4Szl80WX4BKh1mduDLBzX7SKdJYayY-kBwpupaSE0YIbtPBaxZeQ/exec?action=approved';
 let ENTRIES = [];
 let FILTER = 'all';
 
@@ -170,25 +171,18 @@ document.querySelectorAll('#filters .fbtn').forEach(b => b.addEventListener('cli
 
 async function load() {
   const note = document.getElementById('srcnote');
-  // Try the backend first for the freshest list, fall back to the JSON
-  // committed in this repo (updated on every approval via Pages rebuild).
   try {
     const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 8000);
+    const t = setTimeout(() => ctrl.abort(), 20000);
     const r = await fetch(BACKEND, { signal: ctrl.signal });
     clearTimeout(t);
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    ENTRIES = (await r.json()).approved || [];
-    note.textContent = 'live data';
+    const data = await r.json();
+    if (data.error) throw new Error(data.error);
+    ENTRIES = data.approved || [];
+    note.textContent = 'live from the submissions registry';
   } catch (e) {
-    try {
-      const r = await fetch(STATIC_DATA + '?v=' + Math.floor(performance.now()));
-      ENTRIES = await r.json();
-      note.textContent = 'cached data (updates after each approval)';
-    } catch (e2) {
-      ENTRIES = [];
-      note.textContent = '';
-    }
+    ENTRIES = [];
+    note.textContent = 'could not load the registry right now, refresh to retry';
   }
   render();
 }

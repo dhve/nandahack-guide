@@ -68,7 +68,7 @@
   <header>
     <span class="kicker">Admin · review queue</span>
     <h1>Approve showcase submissions.</h1>
-    <p class="sub">Approved entries are committed to the public gallery and appear on the showcase page automatically after the site rebuilds (about a minute). Optionally they are also registered in the NANDA Town skills registry.</p>
+    <p class="sub">Submissions are stored in the team's Google Drive. Approved entries appear on the public showcase immediately, and optionally in the NANDA Town skills registry.</p>
   </header>
 
   <div class="card" id="login">
@@ -93,19 +93,38 @@
 </div>
 
 <script>
-const BACKEND = 'https://cheapest-llm-router.onrender.com';
+// The review queue lives in a Google Sheet in the NANDA Town team's Drive,
+// served by an Apps Script web app. POSTs use text/plain to avoid CORS
+// preflight, which Apps Script web apps do not answer.
+const BACKEND = 'https://script.google.com/macros/s/AKfycbxwVoXAPyggpYR1AJ4Szl80WX4BKh1mduDLBzX7SKdJYayY-kBwpupaSE0YIbtPBaxZeQ/exec';
 let KEY = sessionStorage.getItem('nanda_admin_key') || '';
 
 function esc(s) { return String(s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 const $ = id => document.getElementById(id);
 
-async function api(path, opts) {
+async function apiGet(params) {
   const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), 70000);
+  const t = setTimeout(() => ctrl.abort(), 30000);
   try {
-    const r = await fetch(BACKEND + path, Object.assign({ signal: ctrl.signal }, opts));
+    const r = await fetch(BACKEND + '?' + params, { signal: ctrl.signal });
     const data = await r.json();
-    if (!r.ok) throw new Error(data.detail || 'HTTP ' + r.status);
+    if (data.error) throw new Error(data.error);
+    return data;
+  } finally { clearTimeout(t); }
+}
+
+async function apiPost(body) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 60000);
+  try {
+    const r = await fetch(BACKEND, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body),
+      signal: ctrl.signal,
+    });
+    const data = await r.json();
+    if (data.error) throw new Error(data.error);
     return data;
   } finally { clearTimeout(t); }
 }
@@ -128,10 +147,10 @@ function pendCard(e) {
 }
 
 async function loadQueue() {
-  $('qcount').textContent = 'Loading queue (may take up to 60s if the service is asleep)...';
+  $('qcount').textContent = 'Loading queue...';
   $('list').innerHTML = '';
   try {
-    const data = await api('/showcase/pending?admin_key=' + encodeURIComponent(KEY));
+    const data = await apiGet('action=pending&admin_key=' + encodeURIComponent(KEY));
     $('qcount').textContent = data.count + ' pending submission' + (data.count === 1 ? '' : 's');
     $('list').innerHTML = data.pending.map(pendCard).join('') ||
       '<p style="margin-top:14px;color:var(--muted)">The queue is empty. New submissions land here.</p>';
@@ -153,14 +172,10 @@ async function moderate(id, action, btn) {
   st.className = 'status'; st.textContent = action === 'approve' ? 'Publishing...' : 'Rejecting...';
   try {
     const registerInTown = action === 'approve' ? $('town-' + id).checked : false;
-    const data = await api('/showcase/' + action, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, admin_key: KEY, register_in_town: registerInTown }),
-    });
+    const data = await apiPost({ action, id, admin_key: KEY, register_in_town: registerInTown });
     st.className = 'status ok';
     st.textContent = action === 'approve'
-      ? 'Approved. Live on the showcase after the rebuild (about a minute).'
+      ? 'Approved. Live on the showcase now.'
       : 'Rejected and removed.';
     setTimeout(() => { const el = $('pend-' + id); if (el) el.remove(); }, 1800);
   } catch (e) {

@@ -13,12 +13,6 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
-      - key: SHOWCASE_REPO
-        value: dhve/nandahack-guide
-      - key: GITHUB_TOKEN
-        sync: false
-      - key: ADMIN_KEY
-        sync: false
 
   - type: web
     name: polite-email-rewriter
