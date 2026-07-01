@@ -4,9 +4,11 @@ Given a prompt and an optional minimum quality tier, this service picks the chea
 
 ## Base URL
 
-http://localhost:8000
+https://cheapest-llm-router.onrender.com
 
-(Replace with your public URL after you deploy, for example `https://cheapest-router.demo.nandahack.example`.)
+## Authentication
+
+None. No API key, no token, no signup. Just call the endpoints.
 
 ## Endpoints
 
@@ -15,7 +17,7 @@ Return every model the router knows about, with price per 1k tokens and a qualit
 
 Example call:
 ```
-curl -s https://your-router/models
+curl -s https://cheapest-llm-router.onrender.com/models
 ```
 
 Example reply:
@@ -34,12 +36,16 @@ Example reply:
 ### POST /route
 Pick the cheapest eligible model without running it. Cheap and fast. Use this when the caller wants to see the choice before spending.
 
+Example call:
+```
+curl -s -X POST https://cheapest-llm-router.onrender.com/route \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Summarize this doc in 3 lines.",
+       "min_quality": "standard",
+       "max_output_tokens": 512}'
+```
+
 Body:
-```
-{"prompt": "Summarize this doc in 3 lines.",
- "min_quality": "standard",
- "max_output_tokens": 512}
-```
 - `prompt` (required): the prompt you would send to an LLM.
 - `min_quality` (optional, default `basic`): one of `basic | standard | high | frontier`.
 - `max_output_tokens` (optional, default 512): used to estimate output cost.
@@ -47,25 +53,32 @@ Body:
 Example reply:
 ```
 {
-  "chosen_model": "haiku-4.5",
-  "provider": "anthropic",
+  "chosen_model": "llama-3.1-70b",
+  "provider": "groq",
   "quality": "standard",
-  "estimated_cost_cents": 0.2560,
+  "estimated_cost_cents": 0.041156,
   "estimated_input_tokens": 12,
-  "why": "Cheapest model meeting min_quality=standard..."
+  "why": "Cheapest model meeting min_quality=standard. Priced at $0.00059/1k in, $0.00079/1k out."
 }
 ```
 
 ### POST /complete
 Pick the cheapest eligible model AND run the completion. Returns the answer and the actual cost. Body is identical to `/route`.
 
+Example call:
+```
+curl -s -X POST https://cheapest-llm-router.onrender.com/complete \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Summarize this doc in 3 lines.", "min_quality": "standard"}'
+```
+
 Example reply:
 ```
 {
-  "model": "haiku-4.5",
-  "provider": "anthropic",
+  "model": "llama-3.1-70b",
+  "provider": "groq",
   "response": "The three main themes of the document are ...",
-  "cost_cents": 0.2560,
+  "cost_cents": 0.041156,
   "input_tokens": 12,
   "output_tokens_max": 512
 }
@@ -78,8 +91,9 @@ Example reply:
 3. Otherwise call `POST /complete` directly, return `response` to the user, and mention `model` + `cost_cents` so they know what they paid for.
 4. If you get `400 No models meet min_quality=...`, drop the bar one tier and retry, or tell the user the requested tier is unreachable.
 5. Call `GET /models` only if the user asks to see the full list. The router adds new models without breaking this SkillMD.
+6. On the first request of the day the service may take 30 to 60 seconds to respond because it is a Render free-tier container waking from sleep. Retry idempotent calls once if you get a 404 or timeout.
 
 ## Notes for judges
-- No API key required. The demo build returns deterministic mock completions so the flow always works offline. The routing logic is real.
-- Health check: `GET /` returns the service metadata.
-- Interactive OpenAPI docs at `/docs`.
+- Deployed on Render, source at https://github.com/dhve/nandahack-guide/tree/main/services/router.
+- No API key required. The demo build returns deterministic mock completions so the flow always works. The routing math is real.
+- Interactive OpenAPI docs at https://cheapest-llm-router.onrender.com/docs.

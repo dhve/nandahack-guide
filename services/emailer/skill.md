@@ -4,30 +4,44 @@ Turn a blunt draft email into a polite version in the tone you want. This servic
 
 ## Base URL
 
-http://localhost:8001
+https://polite-email-rewriter.onrender.com
+
+## Authentication
+
+None. No API key, no token, no signup. Just call the endpoints.
+
+## Composes
+
+This service internally calls https://cheapest-llm-router.onrender.com/complete on every `/rewrite`. That upstream service is a separate NandaHack submission — see its own SkillMD at https://cheapest-llm-router.onrender.com/skill.md.
 
 ## Endpoints
 
 ### POST /rewrite
 Rewrite a draft email.
 
+Example call:
+```
+curl -s -X POST https://polite-email-rewriter.onrender.com/rewrite \
+  -H "Content-Type: application/json" \
+  -d '{"draft": "you never replied. send it today.",
+       "tone": "professional",
+       "priority": "normal"}'
+```
+
 Body:
-```
-{"draft": "you never replied. send it today.",
- "tone": "professional",
- "priority": "normal"}
-```
 - `draft` (required): the blunt draft to soften.
 - `tone` (optional, default `professional`): `professional | warm | apologetic`.
 - `priority` (optional, default `normal`): `normal` uses a basic model, `important` upgrades to standard.
 
 Example reply:
 ```
-{"rewritten": "Hi, following up on my previous message...",
- "via_model": "gpt-oss-20b",
- "via_provider": "local-ollama",
- "cost_cents": 0.0,
- "note": "Composed the 'professional' tone at min_quality=basic through cheapest-llm-router."}
+{
+  "rewritten": "Hi, following up on my previous message...",
+  "via_model": "gpt-oss-20b",
+  "via_provider": "local-ollama",
+  "cost_cents": 0.0,
+  "note": "Composed the 'professional' tone at min_quality=basic through cheapest-llm-router."
+}
 ```
 
 ## How the agent should use this
@@ -36,7 +50,10 @@ Example reply:
 2. Call `POST /rewrite` with `draft` and `tone`.
 3. If the user says the message is urgent, important, to a customer, or to a boss, pass `priority: "important"`.
 4. Return `rewritten` to the user, and mention `via_model` + `cost_cents` if they want to know how it was produced.
+5. On the first request of the day the service may take 30 to 60 seconds because both this service and the upstream router are Render free-tier containers waking from sleep. Retry once if you get a 502 or timeout — the emailer already retries against the router internally.
 
 ## Notes for judges
-- This service COMPOSES the Cheapest LLM Router. That is the point: NANDA Town skills can layer on each other. Two agent-facing services, connected end to end.
+- Deployed on Render, source at https://github.com/dhve/nandahack-guide/tree/main/services/emailer.
+- This service COMPOSES the Cheapest LLM Router at https://cheapest-llm-router.onrender.com. Two agent-facing NandaHack submissions, connected end to end.
 - No API key required.
+- Interactive OpenAPI docs at https://polite-email-rewriter.onrender.com/docs.

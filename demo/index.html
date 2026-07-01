@@ -360,19 +360,26 @@ const QUALITY_ORDER = {basic:1, standard:2, high:3, frontier:4};
 
 const SKILL_MD = `# Cheapest LLM Router
 
-Given a prompt and an optional minimum quality tier, this service picks the cheapest LLM that meets the bar, tells you the estimated cost, and can also run the completion. Use it as a routing layer in front of any multi-model workflow when you care about cost.
+Given a prompt and an optional minimum quality tier, this service picks the cheapest LLM that meets the bar, tells you the estimated cost, and can also run the completion.
 
 ## Base URL
 
-https://your-router.example
+https://cheapest-llm-router.onrender.com
+
+## Authentication
+
+None. No API key, no token, no signup.
 
 ## Endpoints
 
 ### GET /models
 Return every model the router knows about, with price per 1k tokens and a quality tier.
+Example: curl -s https://cheapest-llm-router.onrender.com/models
 
 ### POST /route
-Pick the cheapest eligible model without running it. Body: {"prompt": "...", "min_quality": "standard", "max_output_tokens": 512}. Returns chosen_model, provider, estimated_cost_cents, and a "why" explanation.
+Pick the cheapest eligible model without running it.
+Body: {"prompt": "...", "min_quality": "standard", "max_output_tokens": 512}
+Returns chosen_model, provider, estimated_cost_cents, and a "why" explanation.
 
 ### POST /complete
 Pick the cheapest eligible model AND run the completion. Same body as /route.
@@ -382,12 +389,14 @@ Pick the cheapest eligible model AND run the completion. Same body as /route.
 1. If the user gives a quality hint, map it to min_quality (cheap → basic, default → standard, strong → high, best → frontier).
 2. If the user wants a preview before paying, call POST /route first, show chosen_model and estimated_cost_cents, ask to confirm.
 3. Otherwise call POST /complete, return response and mention model + cost_cents so they know what they paid for.
-4. If you get 400 "No models meet min_quality=…", drop the tier one level and retry, or tell the user the tier is unreachable.
+4. If you get 400 "No models meet min_quality=...", drop the tier one level and retry, or tell the user the tier is unreachable.
+5. First request of the day may take 30-60s (Render free-tier cold start). Retry once on 404 or timeout.
 
 ## Notes for judges
 
-- No API key needed. Demo build returns deterministic mock completions so the flow always works.
-- Health check at GET /. Interactive OpenAPI docs at /docs.
+- Deployed on Render. Source at https://github.com/dhve/nandahack-guide/tree/main/services/router.
+- No API key required. Deterministic mock completions so the flow always works. Routing math is real.
+- OpenAPI docs at https://cheapest-llm-router.onrender.com/docs.
 `;
 
 function estTok(t) { return Math.max(1, Math.ceil((t||'').length / 4)); }
