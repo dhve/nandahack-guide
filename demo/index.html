@@ -130,7 +130,7 @@ pre.code { background: var(--term-bg); color: var(--term-fg); border-radius: 14p
     NandaHack Step 2 <small>a full submission you can explore</small>
   </div>
   <div class="status">
-    <span class="status-pill"><span class="status-dot ok"></span>Self-contained · runs in your browser</span>
+    <span class="status-pill" id="mode-pill" title="Backend status"><span class="status-dot" id="mode-dot"></span><span id="mode-label">checking backend…</span></span>
     <a class="status-pill" href="https://discord.gg/3P3UJdZR3F" target="_blank" rel="noopener" style="text-decoration:none; color:inherit;">Questions? NANDA Discord</a>
     <a class="status-pill" href="https://github.com/dhve/nandahack-guide" target="_blank" style="text-decoration:none; color:inherit;">source on GitHub</a>
   </div>
@@ -161,7 +161,7 @@ pre.code { background: var(--term-bg); color: var(--term-fg); border-radius: 14p
     </div>
   </div>
   <div class="diagram" style="text-align:center; margin-top:6px;">
-    Every button below runs the real routing logic. To keep this page always-on and free to host, the two services run inside your browser here. The Python versions with the same logic live in the <a href="https://github.com/dhve/nandahack-guide" target="_blank" style="color:var(--indigo)">source repo</a>.
+    Every button below makes a real HTTPS call to a Python service deployed on Render. First request after a quiet period wakes the container, which can take up to 60 seconds. After that, calls return in a few hundred milliseconds. Source in the <a href="https://github.com/dhve/nandahack-guide" target="_blank" style="color:var(--indigo)">repo</a>.
   </div>
 </section>
 
@@ -336,12 +336,17 @@ pre.code { background: var(--term-bg); color: var(--term-fg); border-radius: 14p
 
 <script>
 // ============================================================
-// Self-contained NandaHack demo. Same logic as the Python services
-// at github.com/dhve/nandahack-guide, running entirely in the browser
-// so this page needs no backend and never goes down.
+// Live NandaHack demo. Every button calls the real Python services
+// deployed on Render. If those services are unreachable (still cold-
+// starting on first hit, or hard down), we fall back to the same
+// routing logic ported to JS so the page never breaks on-screen.
 // ============================================================
-const RURL = 'https://demo.local/router';   // display-only URLs
-const EURL = 'https://demo.local/emailer';
+const RURL = 'https://cheapest-llm-router.onrender.com';
+const EURL = 'https://polite-email-rewriter.onrender.com';
+
+// UI mode. 'live' hits the real backend. 'fallback' uses the local JS impl.
+let MODE = 'checking';
+const REQ_TIMEOUT_MS = 65000;   // give Render cold-start room
 
 const MODELS = [
   {id:'llama-3.1-8b',  provider:'groq',         quality:'basic',    price_per_1k_input:0.00005, price_per_1k_output:0.00008},
@@ -450,15 +455,83 @@ async function mockRewrite(body) {
   };
 }
 
-// Route a "call" to a mock handler. Pretends to be an HTTP layer.
+// In-browser fallback. Only used if the real backend is unreachable.
 async function mockDispatch(method, url, body) {
-  await new Promise(r => setTimeout(r, 40 + Math.random()*60));  // realistic latency
+  await new Promise(r => setTimeout(r, 40 + Math.random()*60));
   if (method === 'GET'  && url.endsWith('/models'))   return {count: MODELS.length, models: MODELS};
   if (method === 'POST' && url.endsWith('/route'))    return await mockRoute(body);
   if (method === 'POST' && url.endsWith('/complete')) return await mockComplete(body);
   if (method === 'POST' && url.endsWith('/rewrite'))  return await mockRewrite(body);
   throw {status:404, detail:'no handler for '+method+' '+url};
 }
+
+// Real HTTPS call to the deployed FastAPI service, with timeout for
+// Render free-tier cold starts (can be 30-60s the first time).
+async function realCall(method, url, body) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), REQ_TIMEOUT_MS);
+  try {
+    const opts = { method, signal: ctrl.signal };
+    if (body) { opts.headers = {'Content-Type':'application/json'}; opts.body = JSON.stringify(body); }
+    const r = await fetch(url, opts);
+    const data = await r.json();
+    if (!r.ok) throw { status: r.status, detail: data.detail || 'HTTP '+r.status };
+    return data;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Try the live backend first; on failure fall back to the in-browser mock
+// so the demo never dead-ends visually. Also updates the mode pill.
+async function smartDispatch(method, url, body) {
+  if (MODE === 'fallback') return mockDispatch(method, url, body);
+  try {
+    const data = await realCall(method, url, body);
+    setMode('live');
+    return data;
+  } catch (e) {
+    if (e && e.status && e.status >= 400 && e.status < 500) {
+      throw e;   // real 4xx error, do not fall back
+    }
+    setMode('fallback');
+    return mockDispatch(method, url, body);
+  }
+}
+
+function setMode(next) {
+  if (MODE === next) return;
+  MODE = next;
+  const dot = document.getElementById('mode-dot');
+  const lab = document.getElementById('mode-label');
+  const pill = document.getElementById('mode-pill');
+  if (!dot || !lab) return;
+  dot.classList.remove('ok','bad');
+  if (next === 'live') {
+    dot.classList.add('ok'); lab.textContent = 'Live backend · Render';
+    pill.title = 'Every button hits the deployed Python service on Render.';
+  } else if (next === 'fallback') {
+    dot.classList.add('bad'); lab.textContent = 'Backend asleep · using fallback';
+    pill.title = 'Live backend did not respond. Using in-browser fallback so the page still works. It may wake up in a minute; refresh to retry.';
+  } else {
+    lab.textContent = 'checking backend…';
+  }
+}
+
+// Kick a warm-up ping on page load so a visitor's FIRST button
+// click gets a warm container. Fires quietly in the background.
+async function warmup() {
+  try {
+    const t0 = performance.now();
+    await realCall('GET', RURL + '/');
+    setMode('live');
+    const ms = Math.round(performance.now() - t0);
+    console.log('router warm in ' + ms + 'ms');
+  } catch (e) { setMode('fallback'); console.log('router warmup failed', e); }
+  // fire-and-forget on the emailer too
+  realCall('GET', EURL + '/').catch(() => {});
+}
+warmup();
 
 function esc(s) { return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
 
@@ -472,22 +545,27 @@ function colorize(json) {
 
 async function callAndRender(method, url, body, termId) {
   const term = document.getElementById(termId);
-  term.innerHTML = '<span class="prompt">$</span> ' + method + ' ' + url +
-    (body ? '\n' + JSON.stringify(body, null, 2) : '') + '\n<span class="muted">...</span>';
+  const head = '<span class="prompt">$</span> ' + method + ' ' + url +
+    (body ? '\n' + JSON.stringify(body, null, 2) : '');
+  term.innerHTML = head + '\n<span class="muted">...</span>';
+  // If the call takes >2s, surface the cold-start explanation
+  const slow = setTimeout(() => {
+    term.innerHTML = head + '\n<span class="muted">waking Render container… first request can take up to 60s</span>';
+  }, 2000);
   try {
     const t0 = performance.now();
-    const data = await mockDispatch(method, url, body);
+    const data = await smartDispatch(method, url, body);
     const t = Math.round(performance.now() - t0);
-    term.innerHTML = '<span class="prompt">$</span> ' + method + ' ' + url +
-      (body ? '\n' + JSON.stringify(body, null, 2) : '') +
-      '\n<span class="info">HTTP 200 in ' + t + 'ms</span>\n' +
+    clearTimeout(slow);
+    term.innerHTML = head +
+      '\n<span class="info">HTTP 200 in ' + t + 'ms' + (MODE === 'fallback' ? ' (in-browser fallback)' : '') + '</span>\n' +
       colorize(JSON.stringify(data, null, 2));
     return { ok: true, data };
   } catch (e) {
+    clearTimeout(slow);
     const status = e && e.status ? e.status : 500;
     const detail = e && e.detail ? e.detail : (e && e.message ? e.message : String(e));
-    term.innerHTML = '<span class="prompt">$</span> ' + method + ' ' + url +
-      (body ? '\n' + JSON.stringify(body, null, 2) : '') +
+    term.innerHTML = head +
       '\n<span class="info">HTTP ' + status + '</span>\n' +
       colorize(JSON.stringify({detail}, null, 2));
     return { ok: false, data: {detail} };
@@ -514,10 +592,25 @@ function doRewrite() {
 async function loadSkill() {
   const badge = document.getElementById('skill-badge');
   const view = document.getElementById('skill-view');
-  view.textContent = 'Loading skill.md ...';
-  await new Promise(r => setTimeout(r, 200));
-  view.textContent = SKILL_MD;
-  badge.className = 'badge'; badge.textContent = SKILL_MD.length + ' chars · loaded';
+  view.textContent = 'Fetching from ' + RURL + '/skill.md ...';
+  const slow = setTimeout(() => {
+    view.textContent = 'waking Render container… first request can take up to 60s';
+  }, 2000);
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), REQ_TIMEOUT_MS);
+    const r = await fetch(RURL + '/skill.md', { signal: ctrl.signal });
+    clearTimeout(timer); clearTimeout(slow);
+    const text = await r.text();
+    view.textContent = text;
+    badge.className = 'badge'; badge.textContent = text.length + ' chars · fetched from ' + RURL;
+    setMode('live');
+  } catch (e) {
+    clearTimeout(slow);
+    view.textContent = SKILL_MD;
+    badge.className = 'badge warn'; badge.textContent = 'backend asleep · showing embedded copy';
+    setMode('fallback');
+  }
 }
 
 async function runJudge() {
@@ -536,37 +629,37 @@ async function runJudge() {
     say('Judge test · agent uses only skill.md', 'muted');
 
     step('Step A. Agent reads /models');
-    let d = await mockDispatch('GET', RURL + '/models');
+    let d = await smartDispatch('GET', RURL + '/models');
     const tiers = [...new Set(d.models.map(m => m.quality))].sort();
     say('Found ' + d.count + ' models · tiers: ' + tiers.join(', '));
 
     step('Step B. "Summarize Hamlet in 3 sentences, use a decent model."');
-    d = await mockDispatch('POST', RURL + '/route',
+    d = await smartDispatch('POST', RURL + '/route',
       { prompt:'Summarize Hamlet in three sentences.', min_quality:'standard', max_output_tokens:512 });
     say('Router picked: ' + d.chosen_model + ' (' + d.provider + ', ' + d.quality + ')');
     say('Estimated cost: ' + d.estimated_cost_cents.toFixed(6) + ' cents');
     say('Why: ' + d.why);
 
     step('Step C. User confirms, agent calls /complete');
-    d = await mockDispatch('POST', RURL + '/complete',
+    d = await smartDispatch('POST', RURL + '/complete',
       { prompt:'Summarize Hamlet in three sentences.', min_quality:'standard', max_output_tokens:512 });
     say('[' + d.model + '] → ' + d.response);
     say('Paid ' + d.cost_cents.toFixed(6) + ' cents');
 
     step('Step D. "Now something cheap: what is 2+2?"');
-    d = await mockDispatch('POST', RURL + '/complete',
+    d = await smartDispatch('POST', RURL + '/complete',
       { prompt:'What is 2+2?', min_quality:'basic', max_output_tokens:32 });
     say('[' + d.model + '] → ' + d.response);
     say('Paid ' + d.cost_cents.toFixed(6) + ' cents');
 
     step('Step E. "Use a frontier model."');
-    d = await mockDispatch('POST', RURL + '/complete',
+    d = await smartDispatch('POST', RURL + '/complete',
       { prompt:'Draft a haiku about NANDA.', min_quality:'frontier', max_output_tokens:64 });
     say('[' + d.model + '] → ' + d.response);
 
     step('Step F. Bad input handled cleanly');
     try {
-      await mockDispatch('POST', RURL + '/route', { prompt:'hi', min_quality:'impossible', max_output_tokens:512 });
+      await smartDispatch('POST', RURL + '/route', { prompt:'hi', min_quality:'impossible', max_output_tokens:512 });
     } catch (err) {
       say('HTTP ' + (err.status||500) + ' · ' + (err.detail || err.message || String(err)));
     }
