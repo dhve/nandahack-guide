@@ -54,8 +54,8 @@
   }
   .path:hover { transform:translateY(-3px); box-shadow:0 16px 30px -18px rgba(20,17,15,.45); border-color:var(--saffron); }
   .path .ptop { display:flex; align-items:center; gap:12px; margin-bottom:9px; }
-  .path .picon { width:42px; height:42px; border-radius:12px; display:grid; place-items:center; font-size:22px; flex-shrink:0; }
-  .path.p1 .picon { background:#fff0e0; } .path.p2 .picon { background:var(--indigo-soft); } .path.p3 .picon { background:#e0f2f1; }
+  .path .picon { width:42px; height:42px; border-radius:12px; display:grid; place-items:center; font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:600; flex-shrink:0; }
+  .path.p1 .picon { background:#fff0e0; color:var(--saffron); } .path.p2 .picon { background:var(--indigo-soft); color:var(--indigo); } .path.p3 .picon { background:#e0f2f1; color:var(--teal); }
   .path .ptitle { font-family:'Sora',sans-serif; font-weight:800; font-size:20px; letter-spacing:-.01em; }
   .path .pfor { font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--muted); margin-top:2px; }
   .path .pdesc { font-size:14.5px; color:#3a342e; line-height:1.5; }
@@ -82,7 +82,7 @@
 <body>
 <div class="toptrim"></div>
 <div class="wrap">
-  <a class="backlink" href="../">&larr; Back to the NandaHack guide</a>
+  <a class="backlink" href="https://nandatown.projectnanda.org" target="_blank" rel="noopener">NANDA Town &nearr;</a>
 
   <header>
     <span class="kicker">NANDA Town · Onboarding</span>
@@ -94,10 +94,10 @@
   <div class="paths">
     <a class="path p1" href="individuals/">
       <div class="ptop">
-        <div class="picon">🧑‍💻</div>
+        <div class="picon">01</div>
         <div>
           <div class="ptitle">Individual contributor</div>
-          <div class="pfor">students · indie devs · hackathon builders</div>
+          <div class="pfor">students · indie devs · researchers</div>
         </div>
       </div>
       <p class="pdesc">You want to learn by doing and ship your first contribution. Start with a small pull request, then build a service an agent can use on its own.</p>
@@ -106,7 +106,7 @@
 
     <a class="path p2" href="startups/">
       <div class="ptop">
-        <div class="picon">🚀</div>
+        <div class="picon">02</div>
         <div>
           <div class="ptitle">Startup contributor</div>
           <div class="pfor">payments · identity · routing · any API product</div>
@@ -118,7 +118,7 @@
 
     <a class="path p3" href="companies/">
       <div class="ptop">
-        <div class="picon">🏢</div>
+        <div class="picon">03</div>
         <div>
           <div class="ptitle">Corporate contributor</div>
           <div class="pfor">established companies · platforms · enterprises</div>
@@ -163,12 +163,17 @@
     </div>
 
     <div class="note"><span class="star">&#9733;</span><span>Companies do <b>not</b> have to open-source their code. An open hook, an SDK, or API access is enough to plug into NANDA Town. Keep your IP, expose an interface agents can use.</span></div>
+
+    <p style="text-align:center;margin-top:18px">
+      <a href="submit/" style="display:inline-block;font-family:'Sora',sans-serif;font-weight:700;font-size:15px;border-radius:100px;padding:13px 26px;background:var(--ink);color:var(--paper);text-decoration:none">Submit a contribution &rarr;</a>
+    </p>
   </div>
 
   <div class="footer">
-    <a href="../">NandaHack guide</a> &nbsp;·&nbsp;
+    <a href="submit/">Submit a contribution</a> &nbsp;·&nbsp;
+    <a href="../">Guides</a> &nbsp;·&nbsp;
     <a href="../demo/">Live demo</a> &nbsp;·&nbsp;
-    <a href="https://nandatown.projectnanda.org/skills" target="_blank" rel="noopener">Submit on NANDA Town</a> &nbsp;·&nbsp;
+    <a href="https://nandatown.projectnanda.org/skills" target="_blank" rel="noopener">The registry</a> &nbsp;·&nbsp;
     <a href="https://discord.gg/3P3UJdZR3F" target="_blank" rel="noopener">Ask on Discord</a>
   </div>
 </div>
