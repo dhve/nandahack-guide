@@ -1,0 +1,29 @@
+# Render blueprint. One click deploys both NandaHack demo services.
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: cheapest-llm-router
+    runtime: python
+    plan: free
+    rootDir: services/router
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+
+  - type: web
+    name: polite-email-rewriter
+    runtime: python
+    plan: free
+    rootDir: services/emailer
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: ROUTER_URL
+        value: https://cheapest-llm-router.onrender.com
